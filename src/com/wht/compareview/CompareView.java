@@ -1,8 +1,6 @@
 package com.wht.compareview;
 
 import java.util.List;
-
-
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
@@ -14,13 +12,13 @@ import android.widget.LinearLayout;
 
 /**
  * @Description: 对比view
- * @author wanghaitao
+ * @author wang
  * @date 2014-11-25 上午11:48:25
  * @version V1.0
  */
 public class CompareView extends View {
 
-	private Context context;
+	
 	/**
 	 * 左边矩形 的颜色
 	 */
@@ -67,7 +65,6 @@ public class CompareView extends View {
 	Paint paintRect = new Paint();
 	
 	Paint paintLine = new Paint();
-	
 	private List<Compare> list;
 
 	public CompareView(Context context) {
@@ -88,22 +85,33 @@ public class CompareView extends View {
 		lineColor = mTypedArray.getColor(R.styleable.CompareView_lineColor,
 				0xff1bfff2);
 		rectHight = mTypedArray.getDimension(R.styleable.CompareView_rectHight,
-				PixelUtil.dp2px(context,35));
-		this.padding = PixelUtil.dp2px(context,10);
-		lineWidth = PixelUtil.dp2px(context,1);
+				dp2px(context,35));
+		this.padding =(int) dp2px(context,10);
+		lineWidth = (int) dp2px(context,1);
 		lineHeight = mTypedArray.getDimension(
-				R.styleable.CompareView_lineHight, PixelUtil.dp2px(context,10));
+				R.styleable.CompareView_lineHight, dp2px(context,10));
 		textSize = mTypedArray.getDimension(
-				R.styleable.CompareView_textSize, PixelUtil.sp2px(context,16));
+				R.styleable.CompareView_textSize, sp2px(context,14));
+		mTypedArray.recycle();
+		textWidth = (int) dp2px(context,37);
 	}
-
+	
+	private float dp2px(Context context,float value) {
+        final float scale = context.getResources().getDisplayMetrics().densityDpi;
+        return  (value * (scale / 160) + 0.5f);
+    }
+    private float sp2px(Context context, float spValue) { 
+        final float fontScale = context.getResources().getDisplayMetrics().scaledDensity; 
+        return  (spValue * fontScale + 0.5f); 
+    }
 	@Override
 	protected void onDraw(Canvas canvas) {
 		// TODO Auto-generated method stub
 		super.onDraw(canvas);
-		
+
 		paintRect.setTextSize(textSize);
 		paintRect.setStyle(Paint.Style.FILL);
+		paintRect.setAntiAlias(true);
 		float centerTextWidth = 0; // 测量字体宽度，我们需要根据字体的宽度设置在圆环中间
 
 		float startX = 0;
@@ -119,7 +127,7 @@ public class CompareView extends View {
 	
 		paintLine.setAntiAlias(true);
 		paintLine.setStrokeWidth(lineWidth);
-		paintLine.setColor(0xff1bfff2);
+		paintLine.setColor(lineColor);
 		if (list != null) {
 			for (int i = 0; i < list.size(); i++) {
 
@@ -128,7 +136,13 @@ public class CompareView extends View {
 				rightText = compare.getRightText();
 				centerText = compare.getCenterText();
 				max = compare.getMax();
-
+				
+				if(leftText==null){
+					leftText ="0";
+				}
+				if(rightText==null){
+					rightText ="0";
+				}
 				centerTextWidth = paintRect.measureText(leftText);
 
 				startX = padding + textWidth;
@@ -138,7 +152,7 @@ public class CompareView extends View {
 				
 				endY =startY+lineHeight;
 				
-				canvas.drawLine(viewWidth / 2-lineWidth/2, startY, viewWidth / 2, endY,
+				canvas.drawLine(viewWidth / 2, startY, viewWidth / 2, endY,
 						paintLine);
 				
 				centerTextWidth = paintRect.measureText(centerText);
@@ -150,21 +164,9 @@ public class CompareView extends View {
 				
 				float rate1=toRate(max, leftText);
 				float rate2=toRate(max, rightText);
-				
-/*				if(rate1<0.6 || rate2<0.6){
-					
-					if(rate1>rate2){
-						
-					}else{
-						
-					}
-				}*/
 				canUseLenth = (endX - startX);
 				startX = endX - canUseLenth * rate1;
-				
 				paintRect.setColor(leftRectColor);
-				
-
 				
 				startY = endY;
 				endY = startY + rectHight;
@@ -174,9 +176,11 @@ public class CompareView extends View {
 
 				paintRect.setColor(Color.BLACK);
 				// 左边文字
-				centerTextWidth = paintRect.measureText(leftText);
-				canvas.drawText(leftText, startX - centerTextWidth - 5, startY
-						+ (endY - startY) / 2 + textSize / 2, paintRect);
+				if(leftText!=null){
+					centerTextWidth = paintRect.measureText(leftText);
+					canvas.drawText(leftText, startX - centerTextWidth - 5, startY
+							+ (endY - startY) / 2 + textSize / 2, paintRect);
+				}
 
 				paintRect.setColor(rightRectColor);
 
@@ -192,6 +196,7 @@ public class CompareView extends View {
 				centerTextWidth = paintRect.measureText(centerText);
 
 
+				if(rightText!=null)
 				// 右边文字
 				canvas.drawText(rightText, endX, startY + (endY - startY) / 2
 						+ textSize / 2, paintRect);
@@ -217,6 +222,7 @@ public class CompareView extends View {
 
 	}
 
+
 	public void addData(List<Compare> list) {
 		this.list = list;
 		postInvalidate();
@@ -229,7 +235,12 @@ public class CompareView extends View {
 			float temp = Float.parseFloat(str);
 			rate = temp / max;
 		}
-		return rate >1? 1:rate;
+		if(rate>1){
+			rate= 1;
+		}else if(rate==0){
+			rate=0.01f;
+		}
+		return rate ;
 
 	}
 
@@ -238,7 +249,8 @@ public class CompareView extends View {
 		// TODO Auto-generated method stub
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		getMeasuredLength(widthMeasureSpec, true);
-	
+		/*setMeasuredDimension(getMeasuredLength(widthMeasureSpec, true),
+				getMeasuredLength(widthMeasureSpec, false)); */
 	}
 
 	private int getMeasuredLength(int length, boolean isWidth) {
@@ -250,6 +262,7 @@ public class CompareView extends View {
 		if (specMode == MeasureSpec.EXACTLY) {
 			size = specSize;
 		} else {
+
 			if (specMode == MeasureSpec.AT_MOST) {
 				size = Math.min(size, specSize);
 			}
